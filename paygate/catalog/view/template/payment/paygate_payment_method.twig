@@ -1,43 +1,65 @@
 <script>
-  $('head').append('<link rel="stylesheet" href="catalog/view/theme/paygate/stylesheet/stylesheet.css">');
+  $('head').append('<link rel="stylesheet" href="catalog/view/theme/paygate/stylesheet/stylesheet.css">')
 </script>
-{#<div id="pw3PayPopup">#}
-    <div id="pw3PayPopupContent">
-        <form name="form" id="pw3form" class="form-horizontal text-left"
-              action="{{ action }}" method="post">
-            {% if pay_methods %}
-                <p><strong>Select your preferred payment type:</strong></p>
-                <table>
-                    <thead><tr><td></td><td></td></tr></thead>
-                    <tbody>
-                    {% for pay_method in pay_methods %}
-                        <tr>
-                            <td>
-                                <label style="margin-left: 30px;">
-                                    <div class="radio">
-                                        {% if loop.first %}
-                                            <input type="radio" name="paygate_pay_method" value="{{ pay_method.method }}" checked="checked">
-                                        {% else %}
-                                            <input type="radio" name="paygate_pay_method" value="{{ pay_method.method }}">
-                                        {% endif %}
-                                        {{ pay_method.title }}
-                                    </div>
-                                </label>
-                            </td>
-                            <td style="text-align: right;">
-                                <img height="20px" src="{{ pay_method.img }}" alt="{{ pay_method.title }}">
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
-            <div class="buttons">
-                <div class="pull-right"><input type="submit" value="{{ button_confirm }}" id="button-confirm"
-                                               class="btn btn-primary"/>
-                </div>
+{# <div id="pw3PayPopup"> #}
+<div id="pw3PayPopupContent">
+    <form name="form" id="pw3form" class="form-horizontal text-left"
+          action="{{ action }}" method="post">
+        {% if pay_methods %}
+            <p><strong>Select your preferred payment type:</strong></p>
+            <table>
+                <thead>
+                <tr>
+                    <td></td>
+                    <td></td>
+                </tr>
+                </thead>
+                <tbody>
+                {% for pay_method in pay_methods %}
+                    <tr>
+                        <td>
+                            <label style="margin-left: 30px;">
+                                <div class="radio">
+                                    <input type="radio" name="paygate_pay_method" value="{{ pay_method.method }}">
+                                    {{ pay_method.title }}
+                                </div>
+                            </label>
+                        </td>
+                        <td style="text-align: right;">
+                            <img height="20px" src="{{ pay_method.img }}" alt="{{ pay_method.title }}">
+                        </td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td>
+                        <label style="margin-left: 30px;">
+                            <div class="radio">
+                                <input type="radio" name="paygate_pay_method" value="" checked hidden>
+                            </div>
+                        </label>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        {% endif %}
+        <div class="buttons">
+            <div class="pull-right"><input type="submit" value="{{ button_confirm }}" id="button-confirm"
+                                           class="btn btn-primary"/>
             </div>
-        </form>
-    </div>
-{#</div>#}
+        </div>
+    </form>
+</div>
+{# Hide the applepay logo for non-Safari browsers #}
+<script type='text/javascript'>
+  $(document).ready(function () {
+    if (window.ApplePaySession === undefined) {
+      // Apple Pay is not available, so let's hide the specific input element
+      var applePayElement = $('tr>td>input[value="applepaymethod"]')
+      var applePayLogo = $('img[alt="Apple Pay"]')
 
+      applePayElement.parent().parent().remove()
+      applePayLogo.parent().parent().remove()
+    }
+  })
+</script>
+{# </div> #}

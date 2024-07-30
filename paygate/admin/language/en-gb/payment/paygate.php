@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2023 Payfast (Pty) Ltd
+ * Copyright (c) 2024 Payfast (Pty) Ltd
  *
  * Author: App Inlet (Pty) Ltd
  *
@@ -29,7 +29,7 @@ $_['entry_geo_zone']           = 'Geo Zone';
 $_['entry_status']             = 'Status';
 $_['entry_sort_order']         = 'Sort Order';
 $_['text_paygate']             = '<a onclick="window.open(\'https://www.paygate.co.za/\');">
-<img src="/extension/paygate/admin/view/image/payment/paygate.png" 
+<img src="/extension/paygate/admin/view/image/payment/paygate.png"
 alt="Paygate" title="Paygate" style="border: 1px solid #EEEEEE;" /></a>';
 $_['entry_merchant_id']        = 'Paygate ID';
 $_['entry_merchant_key']       = 'Encryption Key';
@@ -46,6 +46,9 @@ $_['entry_paypalmethod']       = 'Enable PayPal on Checkout';
 $_['entry_mobicredmethod']     = 'Enable Mobicred on Checkout';
 $_['entry_momopaymethod']      = 'Enable MoMoPay on Checkout';
 $_['entry_scantopaymethod']    = 'Enable ScanToPay on Checkout';
+$_['entry_rcsmethod']          = 'Enable RCS on Checkout';
+$_['entry_applepaymethod']     = 'Enable Apple Pay on Checkout';
+$_['entry_samsungpaymethod']   = 'Enable Samsung Pay on Checkout';
 
 // Tab
 $_['tab_general']      = 'General';

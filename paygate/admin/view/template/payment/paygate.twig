@@ -1,5 +1,5 @@
 {#
-# Copyright (c) 2023 Payfast (Pty) Ltd
+# Copyright (c) 2024 Payfast (Pty) Ltd
 #
 # Author: App Inlet (Pty) Ltd
 #
@@ -38,12 +38,12 @@
                 <form action="{{ action }}" method="post" enctype="multipart/form-data" id="form-paygate"
                       class="form-horizontal">
 
-{#                    <ul class="nav nav-tabs">#}
-{#                        <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a>#}
-{#                        </li>#}
-{#                        <li><a href="#tab-order-status" data-toggle="tab">{{ tab_order_status }}</a></li>#}
-{#                        <li><a href="#tab-pay-methods" data-toggle="tab">{{ tab_pay_methods }}</a></li>#}
-{#                    </ul>#}
+                    {#                    <ul class="nav nav-tabs"> #}
+                    {#                        <li class="active"><a href="#tab-general" data-toggle="tab">{{ tab_general }}</a> #}
+                    {#                        </li> #}
+                    {#                        <li><a href="#tab-order-status" data-toggle="tab">{{ tab_order_status }}</a></li> #}
+                    {#                        <li><a href="#tab-pay-methods" data-toggle="tab">{{ tab_pay_methods }}</a></li> #}
+                    {#                    </ul> #}
                     <div class="tab-content">
 
                         <div class="tab-pane active py-4" id="tab-general">
@@ -66,7 +66,8 @@
                             </div>
                             <hr>
                             <div class="my-4 row align-items-center form-group">
-                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label" for="input-testmode">{{ entry_testmode }}</label>
+                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label"
+                                       for="input-testmode">{{ entry_testmode }}</label>
                                 <div class="col-sm-9">
                                     <select name="payment_paygate_testmode" id="input-testmode" class="form-control">
                                         {% if payment_paygate_testmode %}
@@ -99,7 +100,8 @@
                             </div>
                             <hr>
                             <div class="my-4 row align-items-center form-group">
-                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label" for="input-status">{{ entry_status }}</label>
+                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label"
+                                       for="input-status">{{ entry_status }}</label>
                                 <div class="col-sm-9">
                                     <select name="payment_paygate_status" id="input-status" class="form-control">
                                         {% if payment_paygate_status %}
@@ -119,7 +121,7 @@
                                 <div class="col-sm-9">
                                     <select name="payment_paygate_notifyredirect" id="input-notifyredirect"
                                             class="form-control">
-                                        {% if payment_paygate_notifyredirect == 'notify' %}
+                                        {% if payment_paygate_notifyredirect != 'redirect' %}
                                             <option value="notify" selected="selected">{{ text_notify }}</option>
                                             <option value="redirect">{{ text_redirect }}</option>
                                         {% else %}
@@ -351,6 +353,57 @@
                                     <select name="payment_paygate_scantopaymethod" id="input-scantopaymethod"
                                             class="form-control">
                                         {% if payment_paygate_scantopaymethod == 'yes' %}
+                                            <option value="yes" selected="selected">{{ text_methodyes }}</option>
+                                            <option value="no">{{ text_methodno }}</option>
+                                        {% else %}
+                                            <option value="yes">{{ text_methodyes }}</option>
+                                            <option value="no" selected="selected">{{ text_methodno }}</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="my-4 row align-items-center form-group">
+                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label"
+                                       for="input-rcsmethod">{{ entry_rcsmethod }}</label>
+                                <div class="col-sm-9">
+                                    <select name="payment_paygate_rcsmethod" id="input-rcsmethod"
+                                            class="form-control">
+                                        {% if payment_paygate_rcsmethod == 'yes' %}
+                                            <option value="yes" selected="selected">{{ text_methodyes }}</option>
+                                            <option value="no">{{ text_methodno }}</option>
+                                        {% else %}
+                                            <option value="yes">{{ text_methodyes }}</option>
+                                            <option value="no" selected="selected">{{ text_methodno }}</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="my-4 row align-items-center form-group">
+                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label"
+                                       for="input-applepaymethod">{{ entry_applepaymethod }}</label>
+                                <div class="col-sm-9">
+                                    <select name="payment_paygate_applepaymethod" id="input-applepaymethod"
+                                            class="form-control">
+                                        {% if payment_paygate_applepaymethod == 'yes' %}
+                                            <option value="yes" selected="selected">{{ text_methodyes }}</option>
+                                            <option value="no">{{ text_methodno }}</option>
+                                        {% else %}
+                                            <option value="yes">{{ text_methodyes }}</option>
+                                            <option value="no" selected="selected">{{ text_methodno }}</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="my-4 row align-items-center form-group">
+                                <label class="col-form-label d-flex flex-row-reverse col-sm-2 col-form-label control-label"
+                                       for="input-samsungpaymethod">{{ entry_samsungpaymethod }}</label>
+                                <div class="col-sm-9">
+                                    <select name="payment_paygate_samsungpaymethod" id="input-samsungpaymethod"
+                                            class="form-control">
+                                        {% if payment_paygate_samsungpaymethod == 'yes' %}
                                             <option value="yes" selected="selected">{{ text_methodyes }}</option>
                                             <option value="no">{{ text_methodno }}</option>
                                         {% else %}

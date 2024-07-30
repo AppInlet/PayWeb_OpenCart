@@ -1,6 +1,9 @@
 =====================================
 Date	  : Version: Description
 =====================================
+2024-07-30: v3.1.1 : Add RCS, Samsung Pay and Apple Pay payment method options.
+                     Test on OpenCart 4.0.2.3.
+
 2023-09-22: v3.1.0 : Update for PHP 8.0.
                      Test on OpenCart 4.0.2.2.
 
