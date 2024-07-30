@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2023 Payfast (Pty) Ltd
+ * Copyright (c) 2024 Payfast (Pty) Ltd
  *
  * Author: App Inlet (Pty) Ltd
  *
@@ -37,9 +37,9 @@ class Paygate extends Model
 
         $method_data = array(
             'code'       => 'paygate',
-            'name'      => $title,
+            'name'       => $title,
             'sort_order' => $this->config->get('payment_paygate_sort_order'),
-            'option' => $option_data,
+            'option'     => $option_data,
 
         );
 

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2023 Payfast (Pty) Ltd
+ * Copyright (c) 2024 Payfast (Pty) Ltd
  *
  * Author: App Inlet (Pty) Ltd
  *
@@ -167,6 +167,9 @@ QUERY;
         $data['payment_paygate_momopaymethod']             = $this->checkPostValue("payment_paygate_momopaymethod");
         $data['payment_paygate_geo_zone_id']               = $this->checkPostValue("payment_paygate_geo_zone_id");
         $data['payment_paygate_scantopaymethod']           = $this->checkPostValue("payment_paygate_scantopaymethod");
+        $data['payment_paygate_rcsmethod']                 = $this->checkPostValue("payment_paygate_rcsmethod");
+        $data['payment_paygate_applepaymethod']            = $this->checkPostValue("payment_paygate_applepaymethod");
+        $data['payment_paygate_samsungpaymethod']          = $this->checkPostValue("payment_paygate_samsungpaymethod");
         $data['header']                                    = $this->load->controller('common/header');
         $data['column_left']                               = $this->load->controller('common/column_left');
         $data['footer']                                    = $this->load->controller('common/footer');

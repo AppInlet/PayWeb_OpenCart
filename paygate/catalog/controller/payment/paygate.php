@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright (c) 2023 Payfast (Pty) Ltd
+ * Copyright (c) 2024 Payfast (Pty) Ltd
  *
  * Author: App Inlet (Pty) Ltd
  *
@@ -16,7 +16,7 @@ class Paygate extends Controller
 {
     const CHECKOUT_MODEL      = "checkout/order";
     const INFORMATION_CONTACT = "information/contact";
-    const PAYGATE_CODE = 'paygate.paygate';
+    const PAYGATE_CODE        = 'paygate.paygate';
 
     protected $testmode;
     private $tableName = DB_PREFIX . 'paygate_transaction';
@@ -58,6 +58,18 @@ class Paygate extends Controller
                 'title' => 'ScanToPay',
                 'img'   => $imgs . 'scan-to-pay.svg',
             ],
+            'rcsmethod'          => [
+                'title' => 'RCS',
+                'img'   => $imgs . 'rcs.svg',
+            ],
+            'applepaymethod'     => [
+                'title' => 'Apple Pay',
+                'img'   => $imgs . 'apple-pay.svg',
+            ],
+            'samsungpaymethod'   => [
+                'title' => 'Samsung Pay',
+                'img'   => $imgs . 'samsung-pay.svg',
+            ],
         ];
         $pms        = [];
         foreach ($paymethods as $key => $paymethod) {
@@ -77,7 +89,7 @@ class Paygate extends Controller
         switch ($_POST['paygate_pay_method']) {
             case 'creditcardmethod';
                 $PAY_METHOD        = 'CC';
-                $PAY_METHOD_DETAIL = '';
+                $PAY_METHOD_DETAIL = 'pw3_credit_card';
                 break;
             case 'banktransfermethod':
                 $PAY_METHOD        = 'BT';
@@ -100,6 +112,17 @@ class Paygate extends Controller
                 break;
             case 'scantopaymethod':
                 $PAY_METHOD_DETAIL = 'MasterPass';
+                break;
+            case 'rcsmethod':
+                $PAY_METHOD        = 'CC';
+                $PAY_METHOD_DETAIL = 'RCS';
+                break;
+            case 'applepaymethod':
+                $PAY_METHOD        = 'CC';
+                $PAY_METHOD_DETAIL = 'Applepay';
+                break;
+            case 'samsungpaymethod':
+                $PAY_METHOD_DETAIL = 'Samsungpay';
                 break;
             default:
                 $PAY_METHOD_DETAIL = $_POST['paygate_pay_method'];
@@ -295,7 +318,7 @@ class Paygate extends Controller
                     ]
                 );
             }
-        } elseif (isset($_POST['paygate_pay_method'])) {
+        } elseif (isset($_POST['paygate_pay_method']) && $_POST['paygate_pay_method'] !== "") {
             $pay_method_data = $this->getPayMethodDetails();
         }
 
@@ -361,7 +384,7 @@ class Paygate extends Controller
             // Save transaction data for return
             $paygateData    = serialize($order_info);
             $paygateSession = [
-                'customer' => $this->customer,
+                'customer'   => $this->customer,
                 'customerId' => $order_info['customer_id'],
             ];
             $paygateSession = base64_encode(serialize($paygateSession));
@@ -498,13 +521,13 @@ HTML;
         $checksum          = htmlspecialchars($_POST['CHECKSUM']);
 
         // Retrieve transaction record
-        $record         = $this->db->query(
+        $record  = $this->db->query(
             "select * from {$this->tableName} where paygate_reference = '{$payRequestId}';"
         );
-        $record         = $record?->rows[0];
-        $orderId        = $record['order_id'] ?? 0;
-        $ps = $record['paygate_session'];
-        $pas = base64_decode($ps);
+        $record  = $record?->rows[0];
+        $orderId = $record['order_id'] ?? 0;
+        $ps      = $record['paygate_session'];
+        $pas     = base64_decode($ps);
 
         // Verify checksum
         $checkString = $this->getPaygateId() . $payRequestId . $transactionStatus . $orderId . $this->getEncryptionkey(
@@ -533,10 +556,10 @@ HTML;
 
             $this->setActivityData($order, $orderId);
             $payMethodDesc = '';
-            $respData        = $this->sendCurlRequest($record);
-            $result          = $respData['result'] ?? '';
-            $r               = $respData['r'] ?? '';
-            $error           = $respData['error'] ?? '';
+            $respData      = $this->sendCurlRequest($record);
+            $result        = $respData['result'] ?? '';
+            $r             = $respData['r'] ?? '';
+            $error         = $respData['error'] ?? '';
 
             if (isset($result['PAY_METHOD_DETAIL']) && $result['PAY_METHOD_DETAIL'] != '') {
                 $payMethodDesc = ', using a payment method of ' . $result['PAY_METHOD_DETAIL'];
@@ -598,19 +621,19 @@ HTML;
 
     public function sendCurlRequest($record)
     {
-        $paygateID      = $this->getPaygateId();
+        $paygateID     = $this->getPaygateId();
         $encryptionKey = $this->getEncryptionkey();
-        $useRedirect    = $this->config->get('payment_paygate_notifyredirect') === 'redirect';
-        $respData       = [];
-        $orderId        = $record['order_id'];
-        $r              = "";
-        $error          = false;
+        $useRedirect   = $this->config->get('payment_paygate_notifyredirect') === 'redirect';
+        $respData      = [];
+        $orderId       = $record['order_id'];
+        $r             = "";
+        $error         = false;
         if ($useRedirect) {
             // Query to verify response data
             $payRequestId = htmlspecialchars($_POST['PAY_REQUEST_ID']);
-            $reference      = $orderId;
-            $checksum       = md5($paygateID . $payRequestId . $reference . $encryptionKey);
-            $queryData      = array(
+            $reference    = $orderId;
+            $checksum     = md5($paygateID . $payRequestId . $reference . $encryptionKey);
+            $queryData    = array(
                 'PAYGATE_ID'     => $paygateID,
                 'PAY_REQUEST_ID' => $payRequestId,
                 'REFERENCE'      => $reference,
@@ -746,14 +769,14 @@ HTML;
                 $notify_checksum    = $postData['notify_checksum'];
                 $transaction_status = $postData['transaction_status'];
                 $order_id           = $postData['order_id'];
-                $payMethodDesc    = $postData['pay_method_desc'];
+                $payMethodDesc      = $postData['pay_method_desc'];
 
                 if ($checkSumParams != $notify_checksum) {
                     $errors = true;
                 }
 
                 if (!$errors) {
-                    $txnData      = $this->getOrderStatusDesc($transaction_status);
+                    $txnData       = $this->getOrderStatusDesc($transaction_status);
                     $orderStatusId = $txnData['orderStatusId'];
                     $statusDesc    = $txnData['statusDesc'];
 
@@ -773,7 +796,7 @@ HTML;
         // Check for test / live modes
         $this->testmode = $this->config->get('payment_paygate_testmode') === 'test';
         $paygateID      = $this->getPaygateId();
-        $encryptionKey = $this->getEncryptionkey();
+        $encryptionKey  = $this->getEncryptionkey();
 
         $checkSumParams = '';
 
