@@ -52,7 +52,8 @@
 {# Hide the applepay logo for non-Safari browsers #}
 <script type='text/javascript'>
   $(document).ready(function () {
-    if (window.ApplePaySession === undefined) {
+    const { ApplePaySession } = window
+    if (ApplePaySession === undefined) {
       // Apple Pay is not available, so let's hide the specific input element
       var applePayElement = $('tr>td>input[value="applepaymethod"]')
       var applePayLogo = $('img[alt="Apple Pay"]')

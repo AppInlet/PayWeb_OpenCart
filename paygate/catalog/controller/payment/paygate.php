@@ -1,6 +1,7 @@
 <?php
+
 /*
- * Copyright (c) 2024 Payfast (Pty) Ltd
+ * Copyright (c) 2025 Payfast (Pty) Ltd
  *
  * Author: App Inlet (Pty) Ltd
  *
@@ -9,20 +10,31 @@
 
 namespace Opencart\Catalog\Controller\Extension\Paygate\Payment;
 
+use DateTime;
+use Exception;
 use Opencart\System\Engine\Controller;
 use Opencart\System\Library\Cart\Customer;
+use Payfast\PayfastCommon\Gateway\Request\PaymentRequest;
 
+require_once __DIR__ . '/../../../system/library/vendor/autoload.php';
+
+/**
+ *
+ */
 class Paygate extends Controller
 {
-    const CHECKOUT_MODEL      = "checkout/order";
-    const INFORMATION_CONTACT = "information/contact";
-    const PAYGATE_CODE        = 'paygate.paygate';
+	public const CHECKOUT_MODEL = 'checkout/order';
+	public const INFORMATION_CONTACT = 'information/contact';
+	public const PAYGATE_CODE        = 'paygate.paygate';
 
-    protected $testmode;
-    private $tableName = DB_PREFIX . 'paygate_transaction';
+    protected string $testmode;
+    private string $tableName = DB_PREFIX . 'paygate_transaction';
 
-    public function getPaymentMethods()
-    {
+	/**
+	 * @return array
+	 */
+	public function getPaymentMethods(): array
+	{
         // Add enabled payment methods as checkout options
         $imgs       = 'extension/paygate/catalog/view/image/payment/';
         $paymethods = [
@@ -82,9 +94,12 @@ class Paygate extends Controller
         return $pms;
     }
 
-    public function getPayMethodDetails()
-    {
-        $data       = array();
+	/**
+	 * @return array
+	 */
+	public function getPayMethodDetails(): array
+	{
+        $data       = [];
         $PAY_METHOD = 'EW';
         switch ($_POST['paygate_pay_method']) {
             case 'creditcardmethod';
@@ -134,8 +149,11 @@ class Paygate extends Controller
         return $data;
     }
 
-    public function getCurrency()
-    {
+	/**
+	 * @return string
+	 */
+	public function getCurrency(): string
+	{
         if ($this->config->get('config_currency') != '') {
             $currency = htmlspecialchars($this->config->get('config_currency'));
         } else {
@@ -150,7 +168,7 @@ class Paygate extends Controller
      */
     private function getNotifyUrl(): string
     {
-        $notifyUrl = "";
+        $notifyUrl = '';
         if ($this->config->get('payment_paygate_notifyredirect') === 'notify') {
             $notifyUrl = filter_var(
                 $this->url->link('extension/paygate/payment/paygate|notify_handler', '', true),
@@ -161,12 +179,16 @@ class Paygate extends Controller
         return $notifyUrl;
     }
 
-    public function initiate_data($order_info, $pay_method_data)
-    {
+	/**
+	 * @param $order_info
+	 * @param $pay_method_data
+	 *
+	 * @return array
+	 */
+	public function initiate_data($order_info, $pay_method_data): array
+	{
         $doVault        = '';
         $vaultID        = '';
-        $paygateID      = $this->getPaygateId();
-        $encryption_key = $this->getEncryptionkey();
 
         if (isset($pay_method_data['PAY_METHOD'])) {
             $PAY_METHOD        = $pay_method_data['PAY_METHOD'];
@@ -192,8 +214,8 @@ class Paygate extends Controller
 
         // Check if email empty due to some custom themes displaying this on the same page
         $email           = empty($email) ? $this->config->get('config_email') : $email;
-        $payMethod       = isset($PAY_METHOD) ? $PAY_METHOD : '';
-        $payMethodDetail = isset($PAY_METHOD_DETAIL) ? $PAY_METHOD_DETAIL : '';
+        $payMethod       = $PAY_METHOD ?? '';
+        $payMethodDetail = $PAY_METHOD_DETAIL ?? '';
 
         // Add notify if enabled
         $notifyUrl  = $this->getNotifyUrl();
@@ -205,40 +227,7 @@ class Paygate extends Controller
         $userField2 = "$firstName $lastName";
         $userField3 = 'opencart-v4.x';
 
-        /* getting order info ********/
-
-        $checksum_source = $paygateID . $reference . $amount . $currency . $returnUrl . $transDate;
-
-        $checksum_source .= $locale;
-        $checksum_source .= $country;
-        $checksum_source .= $email;
-
-        if ($payMethod) {
-            $checksum_source .= $payMethod;
-        }
-        if ($payMethodDetail) {
-            $checksum_source .= $payMethodDetail;
-        }
-        if ($notifyUrl !== '') {
-            $checksum_source .= $notifyUrl;
-        }
-
-        $checksum_source .= $userField1;
-        $checksum_source .= $userField2;
-        $checksum_source .= $userField3;
-
-        if ($doVault != '') {
-            $checksum_source .= $doVault;
-        }
-        if ($vaultID != '') {
-            $checksum_source .= $vaultID;
-        }
-
-        $checksum_source .= $encryption_key;
-        $checksum        = md5($checksum_source);
-
-        $initiateData = array(
-            'PAYGATE_ID'        => $paygateID,
+        $initiateData = [
             'REFERENCE'         => $reference,
             'AMOUNT'            => $amount,
             'CURRENCY'          => $currency,
@@ -249,7 +238,7 @@ class Paygate extends Controller
             'EMAIL'             => $email,
             'PAY_METHOD'        => $payMethod,
             'PAY_METHOD_DETAIL' => $payMethodDetail,
-        );
+        ];
         if ($this->config->get('payment_paygate_notifyredirect') === 'notify') {
             $initiateData['NOTIFY_URL'] = $notifyUrl;
         }
@@ -258,13 +247,17 @@ class Paygate extends Controller
         $initiateData['USER3']    = $userField3;
         $initiateData['VAULT']    = $doVault;
         $initiateData['VAULT_ID'] = $vaultID;
-        $initiateData['CHECKSUM'] = $checksum;
+		// Filter out empty values
+		$initiateData = array_filter($initiateData, fn($value) => $value !== null && $value !== '');
 
         return $initiateData;
     }
 
-    public function getPaygateId()
-    {
+	/**
+	 * @return string
+	 */
+	public function getPaygateId(): string
+	{
         $this->testmode = $this->config->get('payment_paygate_testmode') === 'test';
 
         return $this->testmode ? '10011072130' : htmlspecialchars(
@@ -272,8 +265,11 @@ class Paygate extends Controller
         );
     }
 
-    public function getEncryptionkey()
-    {
+	/**
+	 * @return string
+	 */
+	public function getEncryptionkey(): string
+	{
         $this->testmode = $this->config->get('payment_paygate_testmode') === 'test';
 
         return $this->testmode ? 'secret' : $this->config->get('payment_paygate_merchant_key');
@@ -282,152 +278,144 @@ class Paygate extends Controller
     /**
      * Entry point from OC checkout
      *
-     * @return void
      */
-    public function index()
-    {
-        unset($this->session->data['REFERENCE']);
+	public function index()
+	{
+		unset($this->session->data['REFERENCE']);
 
-        $dateTime = new \DateTime();
-        $time     = $dateTime->format('YmdHis');
+		$dateTime = new DateTime();
+		$time     = $dateTime->format('YmdHis');
 
-        $data['text_loading']   = $this->language->get('text_loading');
-        $data['button_confirm'] = $this->language->get('button_confirm');
-        $data['continue']       = $this->language->get('payment_url');
+		$data['text_loading']   = $this->language->get('text_loading');
+		$data['button_confirm'] = $this->language->get('button_confirm');
+		$data['continue']       = $this->language->get('payment_url');
 
-        $pay_method_data = array();
+		$pay_method_data = [];
+		$this->load->model(self::CHECKOUT_MODEL);
 
-        $this->load->model(self::CHECKOUT_MODEL);
+		if (isset($this->session->data['order_id']) && is_numeric($this->session->data['order_id'])) {
+			$order_info = $this->model_checkout_order->getOrder((int)$this->session->data['order_id']);
+		} else {
+			// Handle missing or invalid order_id
+			$order_info = null;
+			// Log or throw an error
+			$this->log->write('Warning: Missing or invalid order_id in session data.');
+		}
 
-        $order_info = $this->model_checkout_order->getOrder($this->session->data['order_id']);
+		// Handle payment methods list
+		if (empty($_POST) && $order_info['payment_method']['code'] === self::PAYGATE_CODE) {
+			$pms = $this->getPaymentMethods();
+			if (!empty($pms)) {
+				return $this->load->view(
+					'extension/paygate/payment/paygate_payment_method',
+					[
+						'pay_methods' => $pms,
+						'action'      => $this->url->link(
+							'extension/paygate/payment/paygate|index',
+							'',
+							true
+						),
+					]
+				);
+			}
+		} elseif (isset($_POST['paygate_pay_method']) && $_POST['paygate_pay_method'] !== '') {
+			$pay_method_data = $this->getPayMethodDetails();
+		}
 
-        if (empty($_POST) && $order_info['payment_method']['code'] === self::PAYGATE_CODE) {
-            /* Get Payment Methods list */
-            $pms = $this->getPaymentMethods();
+		// Handle order and payment initiation
+		if ($order_info) {
+			$initiateData = $this->initiate_data($order_info, $pay_method_data);
+			$paygateID      = $this->getPaygateId();
+			$encryption_key = $this->getEncryptionkey();
 
-            if (!empty($pms)) {
-                return $this->load->view(
-                    'extension/paygate/payment/paygate_payment_method',
-                    [
-                        'pay_methods' => $pms,
-                        'action'      => $this->url->link(
-                            'extension/paygate/payment/paygate|index',
-                            '',
-                            true
-                        ),
-                    ]
-                );
-            }
-        } elseif (isset($_POST['paygate_pay_method']) && $_POST['paygate_pay_method'] !== "") {
-            $pay_method_data = $this->getPayMethodDetails();
-        }
+			$paymentRequest = new PaymentRequest($paygateID, $encryption_key);
+			$response       = $paymentRequest->initiate($initiateData);
 
-        if ($order_info) {
-            $initiateData = $this->initiate_data($order_info, $pay_method_data);
+			$result = [];
+			parse_str($response, $result);
 
-            $fieldsString = '';
+			if (isset($result['ERROR'])) {
+				return $this->displayError(
+					'Error trying to initiate a transaction, paygate error code: ' .
+					$result['ERROR']
+				);
+			}
 
-            // Url-ify the data for the POST
-            foreach ($initiateData as $key => $value) {
-                $fieldsString .= $key . '=' . $value . '&';
-            }
+			$data['CHECKSUM']       = $result['CHECKSUM'];
+			$data['PAY_REQUEST_ID'] = $result['PAY_REQUEST_ID'];
 
-            $fieldsString = rtrim($fieldsString, '&');
+			$this->session->data['REFERENCE'] = $time;
 
-            // Open connection
-            $ch = curl_init();
+			// Handle Paygate processing
+			if ($order_info['payment_method']['code'] === self::PAYGATE_CODE) {
+				$this->savePaygateTransaction($order_info, $result);
+				$htmlForm = $paymentRequest->getRedirectHTML($result['PAY_REQUEST_ID'], $result['CHECKSUM']);
+				$this->cart->clear();
 
-            // Set the url, number of POST vars, POST data
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_URL, 'https://secure.paygate.co.za/payweb3/initiate.trans');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, count($initiateData));
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $fieldsString);
+				$this->renderHtmlForm($htmlForm);
+			}
+		} else {
+			return $this->displayError('Order could not be found, order_id: ' . $this->session->data['order_id']);
+		}
 
-            // Execute post
-            $r = curl_exec($ch);
+		// Default view
+		return $this->load->view('extension/paygate/payment/paygate_redirect', $data);
+	}
 
-            // Close connection
-            curl_close($ch);
+	/**
+	 * Display error message and stop further execution.
+	 */
+	private function displayError($message): string
+	{
+		return '<p>' . $message . '. Log support ticket to <a href="' . $this->url->link(self::INFORMATION_CONTACT) . '">shop owner</a></p>';
+	}
 
-            $result = [];
-            parse_str($r, $result);
-
-            if (isset($result['ERROR'])) {
-                print_r(
-                    'Error trying to initiate a transaction, paygate error code: ' .
-                    $result['ERROR'] . '. Log support ticket to <a href="' . $this->url->link(
-                        self::INFORMATION_CONTACT
-                    ) . '">shop owner</a>'
-                );
-
-                die();
-            }
-
-            $data['CHECKSUM']       = $result['CHECKSUM'];
-            $data['PAY_REQUEST_ID'] = $result['PAY_REQUEST_ID'];
-
-            $this->session->data['REFERENCE'] = $time;
-        } else {
-            print_r(
-                'Order could not be found, order_id: ' . $this->session->data['order_id'] .
-                '. Log support ticket to <a href="' . $this->url->link(
-                    self::INFORMATION_CONTACT
-                ) . '">shop owner</a>'
-            );
-            die();
-        }
-
-        if ($order_info['payment_method']['code'] === self::PAYGATE_CODE) {
-            // Save transaction data for return
-            $paygateData    = serialize($order_info);
-            $paygateSession = [
-                'customer'   => $this->customer,
-                'customerId' => $order_info['customer_id'],
-            ];
-            $paygateSession = base64_encode(serialize($paygateSession));
-            $createDate     = date('Y-m-d H:i:s');
-            $query          = <<<QUERY
-insert into {$this->tableName} (customer_id, order_id, paygate_reference, paygate_data, paygate_session, date_created,
-date_modified)
-values (
-        '{$order_info['customer_id']}',
-        '{$order_info['order_id']}',
-        '{$result['PAY_REQUEST_ID']}',
-        '{$paygateData}',
-        '{$paygateSession}',
-        '{$createDate}',
-        '{$createDate}'
-        )
+	/**
+	 * Save Paygate transaction data.
+	 */
+	private function savePaygateTransaction($order_info, $result): void
+	{
+		$paygateData    = serialize($order_info);
+		$paygateSession = [
+			'customer'   => $this->customer,
+			'customerId' => $order_info['customer_id'],
+		];
+		$paygateSession = base64_encode(serialize($paygateSession));
+		$createDate     = date('Y-m-d H:i:s');
+		$query          = <<<QUERY
+INSERT INTO $this->tableName (customer_id, order_id, paygate_reference, paygate_data, paygate_session, date_created, date_modified)
+VALUES (
+    '{$order_info['customer_id']}',
+    '{$order_info['order_id']}',
+    '{$result['PAY_REQUEST_ID']}',
+    '$paygateData',
+    '$paygateSession',
+    '$createDate',
+    '$createDate'
+)
 QUERY;
-            $this->db->query($query);
 
-            $this->cart->clear();
-            echo <<<HTML
- <form name="form" id="pw3form" class="form-horizontal text-left"
-               action="https://secure.paygate.co.za/payweb3/process.trans" method="post">
-             <input type="hidden" name="PAY_REQUEST_ID" value="$data[PAY_REQUEST_ID]"/>
-             <input type="hidden" name="CHECKSUM" value="$data[CHECKSUM]"/>
-             <div class="buttons">
-                 <div class="pull-right"><input type="hidden" value="Confirm" id="button-confirm"
-                                                class="btn btn-primary"/>
-                 </div>
-             </div>
-         </form>
-         <p style="text-align:center;">Redirecting you to Paygate...</p>
-         <script type="text/javascript">document.getElementById("pw3form").submit();</script>
-         <script type="text/javascript">$("#button-confirm").hide();</script>
-         <script type="text/javascript">$("#button-confirm").trigger('click');</script>
+		$this->db->query($query);
+	}
+
+	/**
+	 * Render the Paygate HTML form.
+	 */
+	private function renderHtmlForm($htmlForm): void
+	{
+		echo <<<HTML
+        $htmlForm
+        <p style="text-align:center;">Redirecting you to Paygate...</p>
+        <script type="text/javascript">document.getElementById("paygate_payment_form").submit();</script>
 HTML;
-        } else {
-            return $this->load->view('extension/paygate/payment/paygate_redirect', $data);
-        }
-    }
+	}
 
-    public function getOrderIdFromSession()
-    {
+
+	/**
+	 * @return int
+	 */
+	public function getOrderIdFromSession(): int
+	{
         // Get order Id from query string as backup if session fails
         $m       = [];
         $orderId = 0;
@@ -441,29 +429,42 @@ HTML;
         return $orderId;
     }
 
-    public function setActivityData($order, $orderId)
-    {
+	/**
+	 * @param $order
+	 * @param $orderId
+	 *
+	 * @return void
+	 */
+	public function setActivityData($order, $orderId): void
+	{
         if ($this->customer->isLogged()) {
-            $activityData = array(
+            $activityData = [
                 'customer_id' => $this->customer->getId(),
                 'name'        => $this->customer->getFirstName() . ' ' . $this->customer->getLastName(),
                 'order_id'    => $orderId,
-            );
+            ];
             $this->model_account_activity->addActivity('order_account', $activityData);
         } else {
-            $activityData = array(
+            $activityData = [
                 'name'     => $order['firstname'] . ' ' . $order['lastname'],
                 'order_id' => $orderId,
-            );
+            ];
             $this->model_account_activity->addActivity('order_guest', $activityData);
         }
     }
 
-    public function mapPGData($result, $useRedirect, $payMethodDesc)
-    {
-        $pgData         = array();
+	/**
+	 * @param $result
+	 * @param $useRedirect
+	 * @param $payMethodDesc
+	 *
+	 * @return array
+	 */
+	public function mapPGData($result, $useRedirect, $payMethodDesc): array
+	{
+        $pgData         = [];
         $orderStatusId  = '7';
-        $resultsComment = "";
+        $resultsComment = '';
         $status         = '';
 
         if (isset($result['TRANSACTION_STATUS'])) {
@@ -472,23 +473,23 @@ HTML;
             if ($result['TRANSACTION_STATUS'] == 0) {
                 $orderStatusId  = 1;
                 $statusDesc     = 'pending';
-                $resultsComment = "Transaction status verification failed. No transaction status.
-                 Please contact the shop owner to confirm transaction status.";
+                $resultsComment = 'Transaction status verification failed. No transaction status.
+                 Please contact the shop owner to confirm transaction status.';
             } elseif ($result['TRANSACTION_STATUS'] == 1) {
                 $orderStatusId  = $this->config->get('payment_paygate_success_order_status_id');
                 $statusDesc     = 'approved';
-                $resultsComment = "Transaction Approved.";
+                $resultsComment = 'Transaction Approved.';
             } elseif ($result['TRANSACTION_STATUS'] == 2) {
                 $orderStatusId  = $this->config->get('payment_paygate_failed_order_status_id');
                 $statusDesc     = 'declined';
-                $resultsComment = "Transaction Declined by PayWeb.";
+                $resultsComment = 'Transaction Declined by PayWeb.';
             } elseif ($result['TRANSACTION_STATUS'] == 4) {
                 $orderStatusId  = $this->config->get('payment_paygate_cancelled_order_status_id');
                 $statusDesc     = 'cancelled';
-                $resultsComment = "Transaction Cancelled by User.";
+                $resultsComment = 'Transaction Cancelled by User.';
             }
             if ($useRedirect) {
-                $resultsComment = "Redirect response from Paygate with a status of " . $statusDesc . $payMethodDesc;
+                $resultsComment = 'Redirect response from Paygate with a status of ' . $statusDesc . $payMethodDesc;
             }
         } else {
             $orderStatusId  = 1;
@@ -513,7 +514,7 @@ HTML;
      * Must use part of this to get to correct checkout page in notify case,
      * but don't process the order
      */
-    public function paygate_return()
+    public function paygate_return(): void
     {
         $this->load->language('extension/paygate/checkout/paygate');
         $payRequestId      = htmlspecialchars($_POST['PAY_REQUEST_ID']);
@@ -522,7 +523,7 @@ HTML;
 
         // Retrieve transaction record
         $record  = $this->db->query(
-            "select * from {$this->tableName} where paygate_reference = '{$payRequestId}';"
+            "select * from $this->tableName where paygate_reference = '$payRequestId';"
         );
         $record  = $record?->rows[0];
         $orderId = $record['order_id'] ?? 0;
@@ -556,7 +557,7 @@ HTML;
 
             $this->setActivityData($order, $orderId);
             $payMethodDesc = '';
-            $respData      = $this->sendCurlRequest($record);
+            $respData      = $this->sendClientRequest($record);
             $result        = $respData['result'] ?? '';
             $r             = $respData['r'] ?? '';
             $error         = $respData['error'] ?? '';
@@ -597,15 +598,27 @@ HTML;
                 unset($this->session->data['vouchers']);
                 unset($this->session->data['totals']);
             }
-        } else {
-            $sessionOrderId = $this->session->data['order_id'] ?? 'Session data not set';
         }
 
-        $this->setHeadingValues($result, $status, $error, $r, $sessionOrderId, $statusDesc, $pas);
+	    $this->setHeadingValues([
+		                            'result'         => $result,
+		                            'status'         => $status,
+		                            'error'          => $error,
+		                            'response'       => $r,
+		                            'sessionOrderId' => $sessionOrderId,
+		                            'statusDesc'     => $statusDesc,
+	                            ]);
     }
 
-    public function restoreCart($products, $statusDesc, $orderId)
-    {
+	/**
+	 * @param $products
+	 * @param $statusDesc
+	 * @param $orderId
+	 *
+	 * @return void
+	 */
+	public function restoreCart($products, $statusDesc, $orderId): void
+	{
         if ($statusDesc !== 'approved' && is_array($products)) {
             // Restore the cart which has already been cleared
             foreach ($products as $product) {
@@ -619,108 +632,96 @@ HTML;
         }
     }
 
-    public function sendCurlRequest($record)
-    {
+	/**
+	 * @param $record
+	 *
+	 * @return array
+	 */
+	public function sendClientRequest($record): array
+	{
         $paygateID     = $this->getPaygateId();
         $encryptionKey = $this->getEncryptionkey();
         $useRedirect   = $this->config->get('payment_paygate_notifyredirect') === 'redirect';
         $respData      = [];
         $orderId       = $record['order_id'];
-        $r             = "";
+		$response = '';
         $error         = false;
         if ($useRedirect) {
             // Query to verify response data
             $payRequestId = htmlspecialchars($_POST['PAY_REQUEST_ID']);
             $reference    = $orderId;
-            $checksum     = md5($paygateID . $payRequestId . $reference . $encryptionKey);
-            $queryData    = array(
-                'PAYGATE_ID'     => $paygateID,
-                'PAY_REQUEST_ID' => $payRequestId,
-                'REFERENCE'      => $reference,
-                'CHECKSUM'       => $checksum,
-            );
 
-            // Url-ify the data for the POST
-            $fieldsString = '';
-            foreach ($queryData as $key => $value) {
-                $fieldsString .= $key . '=' . $value . '&';
-            }
+	        try {
+	            $paymentRequest = new PaymentRequest($paygateID, $encryptionKey);
+				$response = $paymentRequest->query($payRequestId, $reference);
+	        } catch(Exception $exception) {
+				error_log('Exception: ' . $exception->getMessage());
+				$error = true;
+	        }
 
-            $fieldsString = rtrim($fieldsString, '&');
-
-            // Open connection
-            $ch = curl_init();
-
-            // Set the url, number of POST vars, POST data
-            curl_setopt($ch, CURLOPT_POST, 1);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_URL, 'https://secure.paygate.co.za/payweb3/query.trans');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $fieldsString);
-
-            unset($this->session->data['REFERENCE']);
-
-            // Execute post
-            $r     = curl_exec($ch);
-            $error = curl_error($ch);
-
-            // Close connection
-            curl_close($ch);
             $result = [];
-            if (isset($r) && $r != '') {
-                parse_str($r, $result);
+            if ($response != '') {
+                parse_str($response, $result);
             }
         } else {
             // Use transaction status for redirecting in browser only
             $result = $_POST;
         }
         $respData['result'] = $result;
-        $respData['r']      = $r;
+        $respData['r']      = $response;
         $respData['error']  = $error;
 
         return $respData;
     }
 
-    public function setHeadingValues($result, $status, $error, $r, $sessionOrderId, $statusDesc, $pas)
-    {
+	/**
+	 * @param array $params
+	 *
+	 * @return void
+	 */
+	public function setHeadingValues(array $params): void
+	{
+		$result         = $params['result'] ?? [];
+		$status         = $params['status'] ?? '';
+		$error          = $params['error'] ?? '';
+		$response       = $params['response'] ?? '';
+		$sessionOrderId = $params['sessionOrderId'] ?? '';
+		$statusDesc     = $params['statusDesc'] ?? '';
+
         $customerId = (int)isset($result['USER1']) ? $result['USER1'] : 0;
         if ($status == 'ok') {
             $data['heading_title'] = sprintf($this->language->get('heading_title'), $statusDesc);
-            $this->document->setTitle($data['heading_title']);
         } else {
-            $data['heading_title'] = sprintf(
-                'Transaction status verification failed. Status not ok.
-                 Please contact the shop owner to confirm transaction status.'
-            );
+            $data['heading_title'] = 'Transaction status verification failed. Status not ok.
+                 Please contact the shop owner to confirm transaction status.';
             $data['heading_title'] .= json_encode($_POST);
             $data['heading_title'] .= json_encode($result);
             $data['heading_title'] .= 'Curl error: ' . $error;
-            $data['heading_title'] .= 'Curl response: ' . $r;
+            $data['heading_title'] .= 'Curl response: ' . $response;
             $data['heading_title'] .= 'Session data: ' . $sessionOrderId;
-            $this->document->setTitle($data['heading_title']);
         }
+	    $this->document->setTitle($data['heading_title']);
 
-        $data['breadcrumbs']   = array();
-        $data['breadcrumbs'][] = array(
+	    $data['breadcrumbs']   = [];
+        $data['breadcrumbs'][] = [
             'text' => $this->language->get('text_home'),
             'href' => $this->url->link('common/home'),
-        );
+        ];
 
-        $data['breadcrumbs'][] = array(
+        $data['breadcrumbs'][] = [
             'text' => $this->language->get('text_basket'),
             'href' => $this->url->link('checkout/cart'),
-        );
+        ];
 
-        $data['breadcrumbs'][] = array(
+        $data['breadcrumbs'][] = [
             'text' => $this->language->get('text_checkout'),
             'href' => $this->url->link('checkout/checkout', '', 'SSL'),
-        );
+        ];
 
-        $data['breadcrumbs'][] = array(
+        $data['breadcrumbs'][] = [
             'text' => $this->language->get('text_success'),
             'href' => $this->url->link('checkout/success'),
-        );
+        ];
 
         if ($customerId > 0) {
             $data['text_message'] = sprintf(
@@ -754,7 +755,7 @@ HTML;
      * Handles notify response from Paygate
      * Controlled by Redirect/Notify setting in config
      */
-    public function notify_handler()
+    public function notify_handler(): void
     {
         // Shouldn't be able to get here in redirect as notify url is not set in redirect mode
         if ($this->config->get('payment_paygate_notifyredirect') === 'notify') {
@@ -780,7 +781,7 @@ HTML;
                     $orderStatusId = $txnData['orderStatusId'];
                     $statusDesc    = $txnData['statusDesc'];
 
-                    $resultsComment = "Notify response from Paygate with a status of " . $statusDesc . $payMethodDesc;
+                    $resultsComment = 'Notify response from Paygate with a status of ' . $statusDesc . $payMethodDesc;
                     $this->load->model(self::CHECKOUT_MODEL);
                     if ($statusDesc == 'approved') {
                         $this->cart->clear();
@@ -791,8 +792,11 @@ HTML;
         }
     }
 
-    public function prepareCheckSumParams()
-    {
+	/**
+	 * @return array
+	 */
+	public function prepareCheckSumParams(): array
+	{
         // Check for test / live modes
         $this->testmode = $this->config->get('payment_paygate_testmode') === 'test';
         $paygateID      = $this->getPaygateId();
@@ -800,7 +804,7 @@ HTML;
 
         $checkSumParams = '';
 
-        $postData = array();
+        $postData = [];
         foreach ($_POST as $key => $val) {
             if ($key == 'PAYGATE_ID') {
                 $checkSumParams .= $paygateID;
@@ -839,9 +843,14 @@ HTML;
         return $postData;
     }
 
-    public function getOrderStatusDesc($transactionStatus)
-    {
-        $txnData = array();
+	/**
+	 * @param $transactionStatus
+	 *
+	 * @return array
+	 */
+	public function getOrderStatusDesc($transactionStatus): array
+	{
+        $txnData = [];
         if ($transactionStatus == 0) {
             $orderStatusId = 1;
             $statusDesc    = 'pending';
@@ -862,8 +871,11 @@ HTML;
         return $txnData;
     }
 
-    public function confirm()
-    {
+	/**
+	 * @return void
+	 */
+	public function confirm(): void
+	{
         if ($this->session->data['payment_method']['code'] == self::PAYGATE_CODE) {
             $this->load->model(self::CHECKOUT_MODEL);
             $comment = 'Redirected to Paygate';
@@ -876,9 +888,12 @@ HTML;
         }
     }
 
-    public function before_redirect()
-    {
-        $json = array();
+	/**
+	 * @return void
+	 */
+	public function before_redirect(): void
+	{
+        $json = [];
 
         if ($this->session->data['payment_method']['code'] == self::PAYGATE_CODE) {
             $this->load->model(self::CHECKOUT_MODEL);

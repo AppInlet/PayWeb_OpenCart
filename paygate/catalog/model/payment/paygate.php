@@ -1,6 +1,7 @@
 <?php
+
 /*
- * Copyright (c) 2024 Payfast (Pty) Ltd
+ * Copyright (c) 2025 Payfast (Pty) Ltd
  *
  * Author: App Inlet (Pty) Ltd
  *
@@ -11,37 +12,42 @@ namespace Opencart\Catalog\Model\Extension\Paygate\Payment;
 
 use Opencart\System\Engine\Model;
 
+/**
+ *
+ */
 class Paygate extends Model
 {
 
-    public function getMethods($address, $total = null)
-    {
+	/**
+	 * @param $address
+	 * @param $total
+	 *
+	 * @return array
+	 */
+	public function getMethods($address, $total = null): array
+	{
         $this->load->language('extension/paygate/payment/paygate');
 
-        if ($this->config->get('payment_paygate_title') == "") {
+        if ($this->config->get('payment_paygate_title') == '') {
             $title = $this->language->get('text_title');
         } else {
             $title = $this->config->get('payment_paygate_title');
         }
 
-        $method_data = array();
+        $method_data = [];
 
         $option_data['paygate'] = [
             'code' => 'paygate.paygate',
             'name' => $this->language->get('text_title')
         ];
 
-
-        $method_data = array();
-
-
-        $method_data = array(
+        $method_data = [
             'code'       => 'paygate',
             'name'       => $title,
             'sort_order' => $this->config->get('payment_paygate_sort_order'),
             'option'     => $option_data,
 
-        );
+        ];
 
 
         // Add enabled payment methods as checkout options
